@@ -1,6 +1,7 @@
 {
   "name": "calm-mind-backend",
   "version": "1.0.0",
+  "type": "module", 
   "description": "A modern full-stack web application built with React frontend and Node.js backend, featuring user authentication, responsive design, and a complete user management system.",
   "main": "app.js",
   "dependencies": {

@@ -144,3 +144,78 @@ export const logoutUser = async (req, res) => {
     });
   }
 };
+
+// ✅ Superadmin creates Admin or Professor
+export const createUserBySuperAdmin = async (req, res) => {
+  try {
+    const { name, email, password, role } = req.body;
+
+    // Only superadmin allowed
+    if (req.user.role !== "superadmin") {
+      return res.status(403).json({ message: "Access denied. Superadmin only." });
+    }
+
+    if (!["admin", "professor"].includes(role)) {
+      return res.status(400).json({ message: "Invalid role. Must be admin or professor." });
+    }
+
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      return res.status(400).json({ message: "Email already exists" });
+    }
+
+    const newUser = new User({
+      name,
+      email: email.toLowerCase(),
+      password,
+      role,
+    });
+
+    await newUser.save();
+
+    res.status(201).json({
+      message: `${role} account created successfully.`,
+      user: {
+        id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        role: newUser.role,
+      },
+    });
+  } catch (error) {
+    console.error("Create user error:", error);
+    res.status(500).json({ message: "Error creating user", error: error.message });
+  }
+};
+
+// ✅ Complete user profile (after signup)
+export const completeUserProfile = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { department, phone } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    user.department = department || user.department;
+    user.phone = phone || user.phone;
+    user.profileCompleted = true;
+
+    await user.save();
+
+    res.status(200).json({
+      message: "Profile completed successfully.",
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        profileCompleted: user.profileCompleted,
+      },
+    });
+  } catch (error) {
+    console.error("Complete profile error:", error);
+    res.status(500).json({ message: "Error completing profile", error: error.message });
+  }
+};
+
