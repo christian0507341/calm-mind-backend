@@ -107,8 +107,8 @@ npm run lint               # Run ESLint
 ## 🌐 Application URLs
 
 - **Frontend:** http://localhost:5173
-- **Backend API:** http://localhost:5000
-- **API Documentation:** http://localhost:5000/api
+- **Backend API:** http://localhost:4000
+- **API Documentation:** http://localhost:4000/api
 
 ## 🔐 Authentication System
 

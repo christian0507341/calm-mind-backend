@@ -1,0 +1,4 @@
+{"level":"error","message":"Chat error: LLM error: LLM API error: Error"}
+{"level":"error","message":"Delete task error: Cast to ObjectId failed for value \"undefined\" (type string) at path \"_id\" for model \"Task\""}
+{"level":"error","message":"Create task error: Task validation failed: status: `Pending` is not a valid enum value for path `status`."}
+{"level":"error","message":"Create task error: Task validation failed: status: `Pending` is not a valid enum value for path `status`."}
