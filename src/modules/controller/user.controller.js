@@ -1,5 +1,6 @@
 // src/modules/controller/user.controller.js
 import User from "../auth/model/user.model.js";
+import GetStartedProfile from "../getStarted/model/getStarted.model.js"; // ✅ correct import
 import bcrypt from "bcryptjs";
 import { generateToken } from "../../utils/jwt.js";
 
@@ -9,7 +10,9 @@ export const registerUser = async (req, res) => {
     const { name, email, password, role } = req.body;
 
     if (!name || !email || !password) {
-      return res.status(400).json({ message: "Name, email, and password are required" });
+      return res
+        .status(400)
+        .json({ message: "Name, email, and password are required" });
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -18,7 +21,9 @@ export const registerUser = async (req, res) => {
     }
 
     if (password.length < 6) {
-      return res.status(400).json({ message: "Password must be at least 6 characters long" });
+      return res
+        .status(400)
+        .json({ message: "Password must be at least 6 characters long" });
     }
 
     const existingUser = await User.findOne({ email: email.toLowerCase() });
@@ -26,11 +31,10 @@ export const registerUser = async (req, res) => {
       return res.status(400).json({ message: "Email already registered" });
     }
 
-    // ✅ DO NOT manually hash here — let the model handle it
     const newUser = new User({
       name,
       email: email.toLowerCase(),
-      password, // plain text — will be hashed by pre('save')
+      password,
       role: role || "user",
     });
 
@@ -47,7 +51,9 @@ export const registerUser = async (req, res) => {
     });
   } catch (err) {
     console.error("Registration error:", err);
-    res.status(500).json({ message: "Error registering user", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Error registering user", error: err.message });
   }
 };
 
@@ -57,7 +63,9 @@ export const getUsers = async (req, res) => {
     const users = await User.find().select("-password");
     res.json(users);
   } catch (err) {
-    res.status(500).json({ message: "Error fetching users", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Error fetching users", error: err.message });
   }
 };
 
@@ -67,7 +75,9 @@ export const loginUser = async (req, res) => {
     let { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ message: "Email and password are required" });
+      return res
+        .status(400)
+        .json({ message: "Email and password are required" });
     }
 
     email = email.toLowerCase();
@@ -78,9 +88,30 @@ export const loginUser = async (req, res) => {
     }
 
     const isMatch = await user.matchPassword(password);
-
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid email or password" });
+    }
+
+    // ✅ Check and sync profileCompleted
+    let profileCompleted = user.profileCompleted || false;
+
+    if (user.role === "user") {
+      const profile = await GetStartedProfile.findOne({ userId: user._id });
+
+      if (profile) {
+        profileCompleted = true;
+        if (!user.profileCompleted) {
+          user.profileCompleted = true;
+          await user.save();
+        }
+      } else {
+        // Ensure profileCompleted is false if no profile exists
+        profileCompleted = false;
+        if (user.profileCompleted) {
+          user.profileCompleted = false;
+          await user.save();
+        }
+      }
     }
 
     const token = generateToken({
@@ -92,7 +123,13 @@ export const loginUser = async (req, res) => {
     res.status(200).json({
       message: "Login successful",
       token,
-      user: { id: user._id, name: user.name, email: user.email, role: user.role },
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        profileCompleted, // ✅ frontend can check this to skip GetStarted
+      },
     });
   } catch (error) {
     console.error("Login error:", error);
@@ -108,16 +145,37 @@ export const getUserProfile = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
+    let profileCompleted = user.profileCompleted || false;
+    if (user.role === "user") {
+      const profile = await GetStartedProfile.findOne({ userId: user._id });
+      if (profile) {
+        profileCompleted = true;
+        if (!user.profileCompleted) {
+          user.profileCompleted = true;
+          await user.save();
+        }
+      } else {
+        profileCompleted = false;
+        if (user.profileCompleted) {
+          user.profileCompleted = false;
+          await user.save();
+        }
+      }
+    }
+
     res.json({
       user: {
         id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
+        profileCompleted: profileCompleted,
       },
     });
   } catch (error) {
-    res.status(500).json({ message: "Error fetching profile", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Error fetching profile", error: error.message });
   }
 };
 
@@ -140,23 +198,29 @@ export const logoutUser = async (req, res) => {
     console.error("Logout error:", error);
     res.status(500).json({
       message: "Error logging out",
-      error: process.env.NODE_ENV === "development" ? error.message : "Internal server error",
+      error:
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : "Internal server error",
     });
   }
 };
 
-// ✅ Superadmin creates Admin or Professor
+// Superadmin creates Admin or Professor
 export const createUserBySuperAdmin = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
 
-    // Only superadmin allowed
     if (req.user.role !== "superadmin") {
-      return res.status(403).json({ message: "Access denied. Superadmin only." });
+      return res
+        .status(403)
+        .json({ message: "Access denied. Superadmin only." });
     }
 
     if (!["admin", "professor"].includes(role)) {
-      return res.status(400).json({ message: "Invalid role. Must be admin or professor." });
+      return res
+        .status(400)
+        .json({ message: "Invalid role. Must be admin or professor." });
     }
 
     const existingUser = await User.findOne({ email: email.toLowerCase() });
@@ -184,11 +248,13 @@ export const createUserBySuperAdmin = async (req, res) => {
     });
   } catch (error) {
     console.error("Create user error:", error);
-    res.status(500).json({ message: "Error creating user", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Error creating user", error: error.message });
   }
 };
 
-// ✅ Complete user profile (after signup)
+// Complete user profile (after signup)
 export const completeUserProfile = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -215,28 +281,35 @@ export const completeUserProfile = async (req, res) => {
     });
   } catch (error) {
     console.error("Complete profile error:", error);
-    res.status(500).json({ message: "Error completing profile", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Error completing profile", error: error.message });
   }
 };
 
-// ✅ Change password (protected route)
+// Change password (protected route)
 export const updateUserPassword = async (req, res) => {
   try {
     const userId = req.user.id;
     const { currentPassword, newPassword } = req.body;
 
     if (!currentPassword || !newPassword) {
-      return res.status(400).json({ message: "Current and new password are required" });
+      return res
+        .status(400)
+        .json({ message: "Current and new password are required" });
     }
 
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
 
     const isMatch = await bcrypt.compare(currentPassword, user.password);
-    if (!isMatch) return res.status(400).json({ message: "Incorrect current password" });
+    if (!isMatch)
+      return res.status(400).json({ message: "Incorrect current password" });
 
     if (newPassword.length < 6) {
-      return res.status(400).json({ message: "New password must be at least 6 characters long" });
+      return res
+        .status(400)
+        .json({ message: "New password must be at least 6 characters long" });
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -246,8 +319,8 @@ export const updateUserPassword = async (req, res) => {
     res.json({ message: "Password updated successfully" });
   } catch (error) {
     console.error("Change password error:", error);
-    res.status(500).json({ message: "Error changing password", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Error changing password", error: error.message });
   }
 };
-
-

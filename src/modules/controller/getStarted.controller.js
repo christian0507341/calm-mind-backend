@@ -55,6 +55,13 @@ export const createProfile = async (req, res) => {
       userId,
     });
 
+    // ✅ Mark user as profile completed
+    const user = await User.findById(userId);
+    if (user && !user.profileCompleted) {
+      user.profileCompleted = true;
+      await user.save();
+    }
+
     res.status(201).json({
       message: "Profile created successfully",
       data: newProfile,
@@ -135,6 +142,13 @@ export const updateProfile = async (req, res) => {
 
     if (!updatedProfile) {
       return res.status(404).json({ message: "Profile not found" });
+    }
+
+    // ✅ Ensure user's profileCompleted flag is true
+    const user = await User.findById(userId);
+    if (user && !user.profileCompleted) {
+      user.profileCompleted = true;
+      await user.save();
     }
 
     res.json({ message: "Profile updated successfully", data: updatedProfile });
