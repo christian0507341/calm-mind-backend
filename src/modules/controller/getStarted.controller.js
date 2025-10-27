@@ -6,8 +6,6 @@ import path from "path";
 import fs from "fs";
 import bcrypt from "bcryptjs";
 
-
-
 // 🟢 Multer setup for profile image uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -27,26 +25,24 @@ export const upload = multer({ storage });
 // 🟢 Create Profile
 export const createProfile = async (req, res) => {
   try {
-    const {
-      course,
-      yearLevel,
-      studentNumber,
-      address,
-      contactNumber,
-      userId,
-    } = req.body;
-
+    const { course, yearLevel, studentNumber, address, contactNumber } =
+      req.body;
+    const userId = req.user?._id; // ✅ From token (not from body)
     const profileImage = req.file ? req.file.path : "";
 
     if (!course || !yearLevel || !studentNumber || !address || !contactNumber) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    const existing = await GetStartedProfile.findOne({ studentNumber });
+    // ✅ Prevent duplicate profiles for same user or student number
+    const existing = await GetStartedProfile.findOne({
+      $or: [{ studentNumber }, { userId }],
+    });
+
     if (existing) {
-      return res
-        .status(400)
-        .json({ message: "Profile already exists for this student number" });
+      return res.status(400).json({
+        message: "Profile already exists for this user or student number",
+      });
     }
 
     const newProfile = await GetStartedProfile.create({
@@ -56,7 +52,7 @@ export const createProfile = async (req, res) => {
       address,
       contactNumber,
       profileImage,
-      userId: userId || null,
+      userId,
     });
 
     res.status(201).json({
@@ -75,13 +71,16 @@ export const getProfileByStudentNumber = async (req, res) => {
     const { studentNumber } = req.params;
     const profile = await GetStartedProfile.findOne({ studentNumber }).populate(
       "userId",
-      "email"
+      "email name role"
     );
-    if (!profile)
+
+    if (!profile) {
       return res.status(404).json({ message: "Profile not found" });
+    }
+
     res.json({ data: profile });
   } catch (error) {
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
@@ -90,14 +89,13 @@ export const getProfileByUserId = async (req, res) => {
   try {
     const { userId } = req.params;
 
-    // ✅ Check if valid ObjectId
     if (!mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({ message: "Invalid user ID format" });
     }
 
     const profile = await GetStartedProfile.findOne({ userId }).populate(
       "userId",
-      "email"
+      "email name role"
     );
 
     if (!profile) {
@@ -115,6 +113,14 @@ export const getProfileByUserId = async (req, res) => {
 export const updateProfile = async (req, res) => {
   try {
     const { userId } = req.params;
+
+    // ✅ Allow only if the logged-in user is updating their own profile
+    if (req.user._id.toString() !== userId) {
+      return res
+        .status(403)
+        .json({ message: "Forbidden: cannot edit another user's profile" });
+    }
+
     const updates = req.body;
 
     if (req.file) {
@@ -127,11 +133,13 @@ export const updateProfile = async (req, res) => {
       { new: true }
     );
 
-    if (!updatedProfile)
+    if (!updatedProfile) {
       return res.status(404).json({ message: "Profile not found" });
+    }
 
     res.json({ message: "Profile updated successfully", data: updatedProfile });
   } catch (error) {
+    console.error("Error updating profile:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
@@ -142,12 +150,20 @@ export const updatePassword = async (req, res) => {
     const { userId } = req.params;
     const { oldPassword, newPassword } = req.body;
 
+    // ✅ Allow only if the logged-in user is updating their own password
+    if (req.user._id.toString() !== userId) {
+      return res
+        .status(403)
+        .json({ message: "Forbidden: cannot update another user's password" });
+    }
+
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
 
     const isMatch = await bcrypt.compare(oldPassword, user.password);
-    if (!isMatch)
+    if (!isMatch) {
       return res.status(400).json({ message: "Old password is incorrect" });
+    }
 
     const hashed = await bcrypt.hash(newPassword, 10);
     user.password = hashed;
@@ -155,6 +171,7 @@ export const updatePassword = async (req, res) => {
 
     res.json({ message: "Password updated successfully" });
   } catch (error) {
+    console.error("Error updating password:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };

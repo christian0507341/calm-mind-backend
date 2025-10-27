@@ -9,7 +9,7 @@ import {
   createUserBySuperAdmin,
   completeUserProfile,
   updateUserPassword,
-} from "../controller/user.controller.js";
+} from "../../controller/user.controller.js";
 
 import { authenticateToken, authorizeRole } from "../../../middleware/auth.js";
 
@@ -23,10 +23,20 @@ router.put("/update-password", authenticateToken, updateUserPassword);
 // Protected routes
 router.post("/logout", authenticateToken, logoutUser);
 router.get("/profile", authenticateToken, getUserProfile);
-router.get("/", authenticateToken, authorizeRole(["admin", "superadmin"]), getUsers);
+router.get(
+  "/",
+  authenticateToken,
+  authorizeRole(["admin", "superadmin"]),
+  getUsers
+);
 
 // Superadmin-only route
-router.post("/create", authenticateToken, authorizeRole(["superadmin"]), createUserBySuperAdmin);
+router.post(
+  "/create",
+  authenticateToken,
+  authorizeRole(["superadmin"]),
+  createUserBySuperAdmin
+);
 
 // User completes profile
 router.put("/complete-profile", authenticateToken, completeUserProfile);
