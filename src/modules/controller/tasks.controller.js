@@ -1,6 +1,6 @@
 // src/modules/tasks/controllers/tasks.controller.js
-import Task from '../model/tasks.model.js';
-import { DateTime } from '../../../utils/luxon.js';
+import Task from '../tasks/model/tasks.model.js';
+import { DateTime } from '../../utils/luxon.js';
 import winston from 'winston';
 
 // Logger for errors
