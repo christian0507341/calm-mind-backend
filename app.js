@@ -44,11 +44,15 @@ const MONGO_URI = process.env.MONGO_URI;
 
 mongoose
   .connect(MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
+    serverSelectionTimeoutMS: 5000, // Fail fast if MongoDB is not reachable
+    socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
   })
   .then(() => {
-    console.log("✅ MongoDB connected");
+    console.log("✅ MongoDB connected to:", MONGO_URI);
+    // Log the available collections
+    mongoose.connection.db.listCollections().toArray((err, collections) => {
+      console.log("📚 Available collections:", collections.map(c => c.name).join(', '));
+    });
     app.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
       console.log("All user routes available under /api/users");

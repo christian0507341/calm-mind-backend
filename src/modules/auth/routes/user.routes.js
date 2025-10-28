@@ -10,7 +10,6 @@ import {
   getUserProfile,
   logoutUser,
   createUserBySuperAdmin,
-  completeUserProfile,
   updateUserPassword,
 } from "../../controller/user.controller.js";
 
@@ -61,8 +60,5 @@ router.post(
   authorizeRole(["superadmin"]),
   createUserBySuperAdmin
 );
-
-// Complete user profile
-router.put("/complete-profile", authenticateToken, completeUserProfile);
 
 export default router;

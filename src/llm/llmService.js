@@ -118,6 +118,39 @@ Expected JSON:
   "resources": ["Local emergency number", "University counseling service"]
 }
 
+Example 3 (overdue tasks):
+User Input: "I have three assignments overdue and I'm panicking."
+Expected JSON:
+{
+  "response": "I hear you — having multiple overdue tasks is stressful. Let's pick one task you can finish a small part of right now.",
+  "steps": ["Choose the smallest overdue task (10-20 mins)", "Complete a 20-minute focused block", "Send a quick message to your instructor if you need an extension"],
+  "buttons": ["Start 20-min", "Request Extension"],
+  "focus_area": "overdue_management",
+  "escalation_required": false
+}
+
+Example 4 (urgent deadlines):
+User Input: "Two deadlines tomorrow and I don't know which to do first."
+Expected JSON:
+{
+  "response": "Let's prioritize — identify which deadline has the highest consequence if missed, then allocate the first focused block to that task.",
+  "steps": ["List both tasks and impact if missed", "Work on highest-impact task for 45 mins", "Reassess and switch if needed"],
+  "buttons": ["Start 45-min", "Reassess"],
+  "focus_area": "deadline_management",
+  "escalation_required": false
+}
+
+Example 5 (high workload):
+User Input: "My week is overloaded with labs, readings and exams."
+Expected JSON:
+{
+  "response": "Your workload is heavy — try batching similar tasks and creating a simple schedule with short breaks to protect focus.",
+  "steps": ["Group similar tasks into two blocks", "Schedule short 10-min breaks every hour", "Move any low-value tasks to later"],
+  "buttons": ["Batch Tasks", "Take Break"],
+  "focus_area": "workload_planning",
+  "escalation_required": false
+}
+
 
 JSON SCHEMA & RULES:
 - Return a single valid JSON object only, with keys: response (string), steps (array of short strings), buttons (optional array), focus_area (string), escalation_required (boolean), resources (optional array if escalation_required=true).
@@ -127,6 +160,8 @@ JSON SCHEMA & RULES:
 USER QUERY: ${userInput || ''}
 Consider their emotional state and the main stressor when crafting your response.
 `;
+  // Detect distress/crisis language in user input (used for escalation logic)
+  const hasDistressSignals = DISTRESS_KEYWORDS.test(String(userInput || ''));
 
   const payload = {
     model: 'llama3.1:8b',
@@ -160,15 +195,22 @@ Consider their emotional state and the main stressor when crafting your response
     }
 
     // Validate and sanitize the LLM response
+    const escalationRequired = Boolean(data?.escalation_required) || hasDistressSignals || stress_band >= 5;
+
     const sanitizedResponse = {
       response: data?.response?.trim() || "I understand you're dealing with academic stress. Let's break this down into manageable steps.",
       stress_band,
       tone,
+      focus_area: data?.focus_area || 'general_support',
+      escalation_required: escalationRequired,
+      resources: Array.isArray(data?.resources) && data.resources.length > 0
+        ? data.resources.filter(r => typeof r === 'string' && r.length > 0)
+        : (escalationRequired ? [CRISIS_RESOURCES] : []),
       steps: (data?.steps || [])
         .filter(step => typeof step === 'string' && step.length > 0)
         .slice(0, maxSteps)
         .map(step => step.trim()),
-      buttons: stress_band <= 3 ? (data?.buttons || DEFAULT_BUTTONS) : []
+      buttons: Array.isArray(data?.buttons) ? data.buttons : (stress_band <= 3 ? DEFAULT_BUTTONS : [])
     };
 
     // For high stress (band 5) with distress signals, append crisis resources
