@@ -311,7 +311,7 @@ export const updateUserPassword = async (req, res) => {
         .status(400)
         .json({ message: "New password must be at least 6 characters long" });
 
-    // ✅ Don't hash manually — let the pre-save hook handle it
+    // Don't hash manually — let the pre-save hook handle it
     user.password = newPassword;
     await user.save();
 

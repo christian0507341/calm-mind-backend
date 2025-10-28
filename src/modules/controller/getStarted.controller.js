@@ -6,7 +6,7 @@ import path from "path";
 import fs from "fs";
 import bcrypt from "bcryptjs";
 
-// 🟢 Multer setup for profile image uploads
+// Multer setup for profile image uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadDir = "./uploads/profileImages";
@@ -22,19 +22,19 @@ const storage = multer.diskStorage({
 
 export const upload = multer({ storage });
 
-// 🟢 Create Profile
+// Create Profile
 export const createProfile = async (req, res) => {
   try {
     const { course, yearLevel, studentNumber, address, contactNumber } =
       req.body;
-    const userId = req.user?._id; // ✅ From token (not from body)
+    const userId = req.user?._id; // From token (not from body)
     const profileImage = req.file ? req.file.path : "";
 
     if (!course || !yearLevel || !studentNumber || !address || !contactNumber) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    // ✅ Prevent duplicate profiles for same user or student number
+    // Prevent duplicate profiles for same user or student number
     const existing = await GetStartedProfile.findOne({
       $or: [{ studentNumber }, { userId }],
     });
@@ -55,7 +55,7 @@ export const createProfile = async (req, res) => {
       userId,
     });
 
-    // ✅ Mark user as profile completed
+    // Mark user as profile completed
     const user = await User.findById(userId);
     if (user && !user.profileCompleted) {
       user.profileCompleted = true;
@@ -72,7 +72,7 @@ export const createProfile = async (req, res) => {
   }
 };
 
-// 🟡 Get Profile by Student Number
+// Get Profile by Student Number
 export const getProfileByStudentNumber = async (req, res) => {
   try {
     const { studentNumber } = req.params;
@@ -91,7 +91,7 @@ export const getProfileByStudentNumber = async (req, res) => {
   }
 };
 
-// 🟣 Get Profile by User ID (for dashboard reflection)
+// Get Profile by User ID (for dashboard reflection)
 export const getProfileByUserId = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -116,12 +116,12 @@ export const getProfileByUserId = async (req, res) => {
   }
 };
 
-// 🟠 Update Profile (editable fields)
+// Update Profile (editable fields)
 export const updateProfile = async (req, res) => {
   try {
     const { userId } = req.params;
 
-    // ✅ Allow only if the logged-in user is updating their own profile
+    // Allow only if the logged-in user is updating their own profile
     if (req.user._id.toString() !== userId) {
       return res
         .status(403)
@@ -144,7 +144,7 @@ export const updateProfile = async (req, res) => {
       return res.status(404).json({ message: "Profile not found" });
     }
 
-    // ✅ Ensure user's profileCompleted flag is true
+    // Ensure user's profileCompleted flag is true
     const user = await User.findById(userId);
     if (user && !user.profileCompleted) {
       user.profileCompleted = true;
@@ -158,13 +158,13 @@ export const updateProfile = async (req, res) => {
   }
 };
 
-// 🔵 Update Password
+// Update Password
 export const updatePassword = async (req, res) => {
   try {
     const { userId } = req.params;
     const { oldPassword, newPassword } = req.body;
 
-    // ✅ Allow only if the logged-in user is updating their own password
+    // Allow only if the logged-in user is updating their own password
     if (req.user._id.toString() !== userId) {
       return res
         .status(403)
