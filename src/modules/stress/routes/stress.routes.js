@@ -1,7 +1,9 @@
+// src/modules/stress/routes/stress.routes.js
 import express from 'express';
 import { StressLog, StressDaily } from '../model/stress.model.js';
 import { DateTime } from '../../../utils/luxon.js';
 import winston from 'winston';
+import { getStressLogs, getStressDaily } from '../../controller/stress.controller.js';
 
 const logger = winston.createLogger({
   level: 'error',
@@ -11,6 +13,13 @@ const logger = winston.createLogger({
 
 const router = express.Router();
 
+// === GET ALL STRESS LOGS ===
+router.get('/logs', getStressLogs);  // ← THIS WAS MISSING
+
+// === GET DAILY AGGREGATES ===
+router.get('/daily', getStressDaily);
+
+// === POST NEW STRESS LOG ===
 router.post('/log', async (req, res) => {
   try {
     const { user_id, level, tags = [], note = '' } = req.body;
@@ -47,6 +56,7 @@ router.post('/log', async (req, res) => {
   }
 });
 
+// === GET AGGREGATES (WEEKLY/MONTHLY) ===
 router.get('/aggregates', async (req, res) => {
   try {
     const { user_id, period = 'daily' } = req.query;

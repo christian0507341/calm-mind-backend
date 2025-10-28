@@ -1,0 +1,5 @@
+# finetune/Modelfile
+FROM coach-alex-finetuned
+PARAMETER temperature 0.3
+PARAMETER num_ctx 2048
+TEMPLATE """{{ .Prompt }}"""

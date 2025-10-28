@@ -10,6 +10,7 @@ import getStartedRoutes from "./src/modules/getStarted/routes/getStarted.routes.
 import stressRoutes from "./src/modules/stress/routes/stress.routes.js";
 import coachRoutes from "./src/modules/coach/routes/coach.routes.js";
 import tasksRoutes from "./src/modules/tasks/routes/tasks.routes.js";
+import llmRoutes from "./src/llm/routes/llm.routes.js";
 import profileRoutes from "./src/modules/routes/profile.routes.js";
 
 dotenv.config();
@@ -27,6 +28,8 @@ app.use("/api/get-started", getStartedRoutes); // onboarding
 app.use("/api/stress", authenticateToken, stressRoutes); // protected
 app.use("/api/coach", authenticateToken, coachRoutes); // protected
 app.use("/api/tasks", authenticateToken, tasksRoutes); // protected
+app.use("/api/llm", authenticateToken, llmRoutes);
+
 
 app.use("/api/getStarted", profileRoutes);
 

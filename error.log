@@ -27,3 +27,9 @@
 {"level":"error","message":"Chat error: Body is unusable: Body has already been read"}
 {"level":"error","message":"Chat error: Body is unusable: Body has already been read"}
 {"level":"error","message":"Chat error: Body is unusable: Body has already been read"}
+{"level":"error","message":"Chat error: url is not defined"}
+{"level":"error","message":"Chat error: url is not defined"}
+{"level":"error","message":"Chat error: url is not defined"}
+{"level":"error","message":"Chat error: url is not defined"}
+{"level":"error","message":"Chat error: ChatLog validation failed: response: Response must contain {response (string), stress_band (number), tone (string), steps (array), buttons (array)}"}
+{"level":"error","message":"Chat error: ChatLog validation failed: response: Response must contain {response (string), stress_band (number), tone (string), steps (array), buttons (array)}"}
