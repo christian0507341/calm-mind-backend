@@ -106,37 +106,23 @@ export const verifyEmail = async (req, res) => {
 export const loginUser = async (req, res) => {
   try {
     let { email, password } = req.body;
-    if (!email || !password) {
-      console.log('❌ Login failed: Missing email or password');
-      return res.status(400).json({ message: "Email and password are required" });
-    }
+    if (!email || !password)
+      return res
+        .status(400)
+        .json({ message: "Email and password are required" });
 
     email = email.toLowerCase();
     const user = await User.findOne({ email });
-    if (!user) {
-      console.log('❌ Login failed: User not found:', email);
+    if (!user)
       return res.status(401).json({ message: "Invalid email or password" });
-    }
-
-    console.log('🔍 Found user:', {
-      id: user._id,
-      email: user.email,
-      isVerified: user.isVerified,
-      role: user.role
-    });
+    if (!user.isVerified)
+      return res
+        .status(401)
+        .json({ message: "Please verify your email first" });
 
     const isMatch = await user.matchPassword(password);
-    if (!isMatch) {
-      console.log('❌ Login failed: Invalid password for:', email);
+    if (!isMatch)
       return res.status(401).json({ message: "Invalid email or password" });
-    }
-
-    // For development, auto-verify users
-    if (!user.isVerified) {
-      console.log('🔄 Auto-verifying user for development:', email);
-      user.isVerified = true;
-      await user.save();
-    }
 
     let profileCompleted = user.profileCompleted || false;
     if (user.role === "user") {

@@ -1,5 +1,4 @@
 import express from "express";
-import { authenticateToken, authorizeRole } from "../../../middleware/auth.js";
 import {
   upload,
   createProfile,
