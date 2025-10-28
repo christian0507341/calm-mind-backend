@@ -2,6 +2,9 @@
 import { Router } from "express";
 import {
   registerUser,
+  verifyEmail,
+  forgotPassword,
+  resetPassword,
   getUsers,
   loginUser,
   getUserProfile,
@@ -15,20 +18,51 @@ import { authenticateToken, authorizeRole } from "../../../middleware/auth.js";
 
 const router = Router();
 
-// Public routes
+// -------------------- PUBLIC ROUTES --------------------
+
+// Register new user
 router.post("/register", registerUser);
+
+// Verify email
+router.get("/verify-email/:token", verifyEmail);
+
+// Login
 router.post("/login", loginUser);
+
+// Forgot password
+router.post("/forgot-password", forgotPassword);
+
+// Reset password
+router.post("/reset-password/:token", resetPassword);
+
+// Update password (requires authentication)
 router.put("/update-password", authenticateToken, updateUserPassword);
 
-// Protected routes
+// -------------------- PROTECTED ROUTES --------------------
+
+// Logout
 router.post("/logout", authenticateToken, logoutUser);
+
+// Get user profile
 router.get("/profile", authenticateToken, getUserProfile);
-router.get("/", authenticateToken, authorizeRole(["admin", "superadmin"]), getUsers);
 
-// Superadmin-only route
-router.post("/create", authenticateToken, authorizeRole(["superadmin"]), createUserBySuperAdmin);
+// Get all users (admin/superadmin only)
+router.get(
+  "/",
+  authenticateToken,
+  authorizeRole(["admin", "superadmin"]),
+  getUsers
+);
 
-// User completes profile
+// Superadmin creates Admin or Professor
+router.post(
+  "/create",
+  authenticateToken,
+  authorizeRole(["superadmin"]),
+  createUserBySuperAdmin
+);
+
+// Complete user profile
 router.put("/complete-profile", authenticateToken, completeUserProfile);
 
 export default router;

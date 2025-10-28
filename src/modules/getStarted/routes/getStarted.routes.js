@@ -6,23 +6,56 @@ import {
   getProfileByUserId,
   updateProfile,
   updatePassword,
-} from "../../controller/getStarted.controller.js";
+} from "../controller/getStarted.controller.js";
 
 const router = express.Router();
 
-// 🟢 Create Profile
-router.post("/", upload.single("profileImage"), createProfile);
+/**
+ * 🟢 Create Student Profile
+ * Only accessible by logged-in users with the "student" role.
+ * Automatically links profile to req.user._id.
+ */
+router.post(
+  "/",
+  authenticateToken,
+  authorizeRole(["user"]),
+  upload.single("profileImage"),
+  createProfile
+);
 
-// 🟡 Get profile by student number
-router.get("/:studentNumber", getProfileByStudentNumber);
+/**
+ * 🟡 Get Profile by Student Number
+ * Example: GET /api/profile/2023-00123
+ */
+router.get("/:studentNumber", authenticateToken, getProfileByStudentNumber);
 
-// 🟣 Get profile by userId
-router.get("/profile/:userId", getProfileByUserId);
+/**
+ * 🟣 Get Profile by User ID
+ * Example: GET /api/profile/user/64f1b5...
+ */
+router.get("/user/:userId", authenticateToken, getProfileByUserId);
 
-// 🟠 Update profile (name, address, image, etc.)
-router.put("/update-profile/:userId", upload.single("profileImage"), updateProfile);
+/**
+ * 🟠 Update Profile (address, image, etc.)
+ * Only the logged-in student who owns the profile can update.
+ */
+router.put(
+  "/update-profile/:userId",
+  authenticateToken,
+  authorizeRole(["student"]),
+  upload.single("profileImage"),
+  updateProfile
+);
 
-// 🔵 Update password
-router.put("/update-password/:userId", updatePassword);
+/**
+ * 🔵 Update Password
+ * For security, must be logged in and the correct user.
+ */
+router.put(
+  "/update-password/:userId",
+  authenticateToken,
+  authorizeRole(["student"]),
+  updatePassword
+);
 
 export default router;
