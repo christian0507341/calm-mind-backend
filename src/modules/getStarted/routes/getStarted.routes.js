@@ -7,7 +7,9 @@ import {
   getProfileByUserId,
   updateProfile,
   updatePassword,
-} from "../controller/getStarted.controller.js";
+} from "../../controller/getStarted.controller.js";
+
+import { authenticateToken, authorizeRole } from "../../../utils/jwt.js"; // adjust relative path if needed
 
 const router = express.Router();
 

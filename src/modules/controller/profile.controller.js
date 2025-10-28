@@ -34,7 +34,7 @@ export const getProfile = async (req, res) => {
       ? user.name.split(" ")
       : ["", ""];
 
-    // ✅ Return data matching frontend structure
+    // Return data matching frontend structure
     const data = {
       firstName,
       lastName,
@@ -86,7 +86,7 @@ export const updateProfile = async (req, res) => {
     // Optional: handle avatar file
     const profileImage = req.file ? req.file.path : req.body.profileImage;
 
-    // ✅ Update User model
+    // Update User model
     const updatedUser = await User.findByIdAndUpdate(
       objectId,
       {
@@ -101,7 +101,7 @@ export const updateProfile = async (req, res) => {
         .status(404)
         .json({ success: false, message: "User not found" });
 
-    // ✅ Update GetStartedProfile model
+    // Update GetStartedProfile model
     const updatedProfile = await GetStartedProfile.findOneAndUpdate(
       { userId: objectId },
       {
