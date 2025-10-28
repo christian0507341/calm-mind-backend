@@ -1,7 +1,8 @@
 import express from 'express';
 import { StressLog, StressDaily } from '../../stress/model/stress.model.js';
 import Task from '../../tasks/model/tasks.model.js';
-import { getCoachResponse } from '../../../llm/llmService.js'; // Updated import path
+import { ChatLog } from '../model/coachLog.model.js';
+import { getCoachResponse } from '../../../llm/llmService.js';
 import { DateTime } from 'luxon';
 import winston from 'winston';
 
@@ -10,6 +11,8 @@ const logger = winston.createLogger({
   format: winston.format.json(),
   transports: [new winston.transports.File({ filename: 'error.log' })],
 });
+
+import { calculateDailyStress, aggregateStress } from '../../../utils/stressCalculator.js';
 
 const router = express.Router();
 
@@ -86,11 +89,17 @@ router.get('/context', async (req, res) => {
     ]).then((tags) => tags.map((t) => t._id));
 
     const tasks = await Task.find({ user_id });
-    const due_48h_count = tasks.filter((t) => {
-      const due = DateTime.fromJSDate(new Date(t.due_date));
-      return due > now && due < now.plus({ hours: 48 });
-    }).length;
-    const overdue_count = tasks.filter((t) => t.status === 'Overdue').length;
+    
+    // Calculate stress using new stress calculator
+    const dailyStress = calculateDailyStress(tasks);
+    const weeklyStress = aggregateStress(
+      [dailyStress], // In production, you'd pass 7 days of daily stress calculations
+      'week'
+    );
+
+    // Original task counting logic
+    const due_48h_count = dailyStress.metrics.due48h;
+    const overdue_count = dailyStress.metrics.overdueTasks;
     const next_deadlines = tasks
       .filter((t) => DateTime.fromJSDate(new Date(t.due_date)) > now)
       .map((t) => t.due_date.toISOString().split('T')[0])
@@ -103,8 +112,23 @@ router.get('/context', async (req, res) => {
     res.json({
       student: { year_level: 'Sophomore', timezone: 'Asia/Manila' },
       now: now.toISO(),
-      stress: { last_level: lastLog?.level || 3, today_avg, week_avg, trend, top_tags },
-      workload: { due_48h_count, overdue_count, next_deadlines },
+      stress: { 
+        last_level: lastLog?.level || 3,
+        today_avg: dailyStress.normalized,
+        week_avg: weeklyStress.average,
+        trend: weeklyStress.trend > 0.1 ? 'up' : weeklyStress.trend < -0.1 ? 'down' : 'flat',
+        top_tags,
+        factors: {
+          task_stress: dailyStress.taskStresses,
+          metrics: dailyStress.metrics
+        }
+      },
+      workload: { 
+        due_48h_count, 
+        overdue_count, 
+        next_deadlines,
+        total_tasks: dailyStress.metrics.totalTasks
+      },
       recent_actions: { tasks_completed_today, reschedules },
     });
   } catch (err) {
@@ -117,13 +141,24 @@ router.get('/context', async (req, res) => {
 router.post('/chat', async (req, res) => {
   try {
     const { user_id, message, stress, workload } = req.body;
+    console.log('Chat request:', { user_id, message, stress, workload });
     if (!user_id || !message) return res.status(400).json({ error: 'user_id and message required' });
 
     const contextRes = await fetch(
       `http://localhost:${process.env.PORT || 4000}/api/coach/context?user_id=${user_id}`,
       { headers: { Authorization: req.headers.authorization } }
     );
+    
+    if (!contextRes.ok) {
+      throw new Error(`Context fetch failed: ${contextRes.status} ${contextRes.statusText}`);
+    }
+
     const context = await contextRes.json();
+    console.log('Context response:', contextRes.status, context);
+    
+    if (context.error) {
+      throw new Error(`Context error: ${context.error}`);
+    }
 
     const { response, stress_band, tone, steps, buttons } = await getCoachResponse(
       { ...context, stress: stress || context.stress, workload: workload || context.workload },
@@ -135,8 +170,18 @@ router.post('/chat', async (req, res) => {
       finalResponse += '\n\nYou’re not alone—reach out: [Crisis Text Line](https://www.crisistextline.org) or a trusted advisor.';
     }
 
+    // Save chat log
+    const chatLog = new ChatLog({
+      user_id,
+      message,
+      response: { response: finalResponse, stress_band, tone, steps, buttons },
+      stress_band,
+    });
+    await chatLog.save();
+
     res.json({ response: finalResponse, stress_band, tone, steps, buttons });
   } catch (err) {
+    console.error('Chat error details:', err.message, err.stack);
     logger.error(`Chat error: ${err.message}`);
     res.status(500).json({ error: 'Server error' });
   }

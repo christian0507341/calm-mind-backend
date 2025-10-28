@@ -6,7 +6,7 @@ import {
   getProfileByUserId,
   updateProfile,
   updatePassword,
-} from "../controller/getStarted.controller.js";
+} from "../../controller/getStarted.controller.js";
 
 const router = express.Router();
 

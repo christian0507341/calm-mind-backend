@@ -9,7 +9,7 @@ import {
   createUserBySuperAdmin,
   completeUserProfile,
   updateUserPassword,
-} from "../controller/user.controller.js";
+} from "../../controller/user.controller.js";
 
 import { authenticateToken, authorizeRole } from "../../../middleware/auth.js";
 

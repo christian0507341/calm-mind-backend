@@ -3,3 +3,27 @@
 {"level":"error","message":"Create task error: Task validation failed: status: `Pending` is not a valid enum value for path `status`."}
 {"level":"error","message":"Create task error: Task validation failed: status: `Pending` is not a valid enum value for path `status`."}
 {"level":"error","message":"Chat error: LLM API error: Error"}
+{"level":"error","message":"Chat error: LLM API error: Request failed with status code 404"}
+{"level":"error","message":"Chat error: LLM API error: Request failed with status code 404"}
+{"level":"error","message":"Chat error: LLM API error: Request failed with status code 404"}
+{"level":"error","message":"Chat error: LLM API error: status=404, body=\"404 page not found\""}
+{"level":"error","message":"Chat error: LLM API error: status=404, body=\"404 page not found\""}
+{"level":"error","message":"Chat error: LLM API error: status=404, body=\"404 page not found\""}
+{"level":"error","message":"Chat error: LLM API error: status=404, body=\"404 page not found\""}
+{"level":"error","message":"Chat error: LLM API error: status=404, body=\"404 page not found\""}
+{"level":"error","message":"Chat error: LLM API error: status=404, body=\"404 page not found\""}
+{"level":"error","message":"Chat error: LLM API error: status=404, body=\"404 page not found\""}
+{"level":"error","message":"Chat error: LLM API error: status=404, body=\"404 page not found\""}
+{"level":"error","message":"Chat error: LLM API error: status=404, body=\"404 page not found\""}
+{"level":"error","message":"Chat error: LLM API error: status=404, body=\"404 page not found\""}
+{"level":"error","message":"Chat error: LLM API error: status=404, body=\"404 page not found\""}
+{"level":"error","message":"Chat error: LLM API error: status=404, body=\"404 page not found\""}
+{"level":"error","message":"Chat error: LLM API error: status=404, body=\"404 page not found\""}
+{"level":"error","message":"Chat error: LLM API error: status=404, body=\"404 page not found\""}
+{"level":"error","message":"Chat error: LLM API error: status=404, body=\"404 page not found\""}
+{"level":"error","message":"Chat error: LLM API error: status=404, body=\"404 page not found\""}
+{"level":"error","message":"Chat error: Body is unusable: Body has already been read"}
+{"level":"error","message":"Chat error: Body is unusable: Body has already been read"}
+{"level":"error","message":"Chat error: Body is unusable: Body has already been read"}
+{"level":"error","message":"Chat error: Body is unusable: Body has already been read"}
+{"level":"error","message":"Chat error: Body is unusable: Body has already been read"}

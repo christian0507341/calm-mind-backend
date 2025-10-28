@@ -10,6 +10,13 @@ const taskSchema = new Schema({
   due_date: { type: Date, required: true },
   status: { type: String, enum: ['todo', 'in_progress', 'missing', 'completed'], default: 'todo' },
   created_at: { type: Date, default: Date.now },
+  completed: { type: Boolean, default: false },
+  stress_factors: {
+    priority_stress: { type: Number },
+    deadline_stress: { type: Number },
+    completion_stress: { type: Number },
+    total_stress: { type: Number }
+  },
   subtasks: [
     {
       title: { type: String, required: true },
