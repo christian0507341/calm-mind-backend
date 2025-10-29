@@ -153,7 +153,7 @@ export const loginUser = async (req, res) => {
   }
 };
 
-// -------------------- FORGOT PASSWORD --------------------
+// -------------------- FORGOT PASSWORD (Generate + Log 6-digit Code) --------------------
 export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
@@ -162,59 +162,68 @@ export const forgotPassword = async (req, res) => {
     const user = await User.findOne({ email: email.toLowerCase() });
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    const resetToken = user.generateResetToken();
+    // Generate 6-digit code using the model method
+    const code = user.generateResetCode();
     await user.save();
 
-    const resetUrl = `${req.protocol}://${req.get(
-      "host"
-    )}/api/users/reset-password/${resetToken}`;
-    await sendEmail(
-      user.email,
-      "Password Reset Request",
-      `Click here to reset your password: ${resetUrl}`
-    );
+    // Print the reset code in the terminal instead of sending email
+    console.log("--------------------------------------------------");
+    console.log(`Password reset code for ${user.email}: ${code}`);
+    console.log("This code will expire in 10 minutes.");
+    console.log("--------------------------------------------------");
 
     res.status(200).json({
-      message: "Password reset link sent. Check terminal to simulate email.",
+      message:
+        "Verification code generated. Check terminal to simulate email delivery.",
     });
   } catch (err) {
     console.error("Forgot password error:", err);
     res.status(500).json({
-      message: "Error sending password reset email",
+      message: "Error generating verification code",
       error: err.message,
     });
   }
 };
 
-// -------------------- RESET PASSWORD --------------------
+// -------------------- RESET PASSWORD (Verify code + Set New Password) --------------------
 export const resetPassword = async (req, res) => {
   try {
-    const { token } = req.params;
-    const { newPassword } = req.body;
-    if (!newPassword)
-      return res.status(400).json({ message: "New password is required" });
+    const { email, code, newPassword } = req.body;
 
-    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+    if (!email || !code || !newPassword) {
+      return res
+        .status(400)
+        .json({ message: "Email, code, and new password are required" });
+    }
+
+    // Find the user by email and valid reset code
     const user = await User.findOne({
-      resetPasswordToken: hashedToken,
-      resetPasswordExpire: { $gt: Date.now() },
+      email: email.toLowerCase(),
+      resetCode: code,
+      resetCodeExpire: { $gt: Date.now() }, // check if code is still valid
     });
-    if (!user)
-      return res.status(400).json({ message: "Invalid or expired token" });
 
+    if (!user) {
+      return res
+        .status(400)
+        .json({ message: "Invalid or expired verification code" });
+    }
+
+    // Update password and clear reset code fields
     user.password = newPassword;
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpire = undefined;
+    user.resetCode = undefined;
+    user.resetCodeExpire = undefined;
     await user.save();
 
-    res
-      .status(200)
-      .json({ message: "Password reset successful. You can now log in." });
+    res.status(200).json({
+      message: "Password reset successful. You can now log in.",
+    });
   } catch (err) {
     console.error("Reset password error:", err);
-    res
-      .status(500)
-      .json({ message: "Error resetting password", error: err.message });
+    res.status(500).json({
+      message: "Error resetting password",
+      error: err.message,
+    });
   }
 };
 

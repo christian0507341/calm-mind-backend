@@ -31,8 +31,8 @@ router.post("/login", loginUser);
 // Forgot password
 router.post("/forgot-password", forgotPassword);
 
-// Reset password
-router.post("/reset-password/:token", resetPassword);
+// ✅ FIXED: Reset password (use body with email, code, newPassword)
+router.post("/reset-password", resetPassword);
 
 // Update password (requires authentication)
 router.put("/update-password", authenticateToken, updateUserPassword);
