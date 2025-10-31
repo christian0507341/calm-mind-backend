@@ -4,9 +4,9 @@ import fs from 'fs-extra';
 import path from 'path';
 
 const ollama = new Ollama({ host: 'http://localhost:11434' });
-const DATASET = path.join(process.cwd(), 'data', 'coach_finetune_dataset.jsonl');
+const DATASET = path.join(process.cwd(), 'data', 'calm_coach_finetune.jsonl');
 const BASE = 'llama3.1:8b';
-const NAME = 'coach-alex-finetuned';
+const NAME = 'calm-mind-coach';
 
 console.log('Starting fine-tune...');
 

@@ -11,12 +11,8 @@ const taskSchema = new Schema({
   status: { type: String, enum: ['todo', 'in_progress', 'missing', 'completed'], default: 'todo' },
   created_at: { type: Date, default: Date.now },
   completed: { type: Boolean, default: false },
-  stress_factors: {
-    priority_stress: { type: Number },
-    deadline_stress: { type: Number },
-    completion_stress: { type: Number },
-    total_stress: { type: Number }
-  },
+  stress_factors: { type: Object, default: {} },
+  tags: [{ type: String }],
   subtasks: [
     {
       title: { type: String, required: true },
@@ -26,7 +22,7 @@ const taskSchema = new Schema({
 });
 
 // Optional: format dates before sending to frontend
-taskSchema.methods.toJSON = function() {
+taskSchema.methods.toJSON = function () {
   const obj = this.toObject();
   obj.start_date = obj.start_date ? obj.start_date.toISOString().split("T")[0] : null;
   obj.due_date = obj.due_date ? obj.due_date.toISOString().split("T")[0] : null;

@@ -25,6 +25,8 @@ export const getTasks = async (req, res) => {
             start_date: t.start_date ? t.start_date.toISOString() : null,  // <-- ISO string
             due_date: t.due_date ? t.due_date.toISOString() : null,        // <-- ISO string
             status: t.status,
+            completed: Boolean(t.status === 'completed' || t.completed),
+            tags: Array.isArray(t.tags) ? t.tags : [],
             subtasks: t.subtasks || []
         }));
 
@@ -38,7 +40,7 @@ export const getTasks = async (req, res) => {
 // ===== CREATE TASK =====
 export const createTask = async (req, res) => {
     try {
-        const { user_id, title, due_date, description, priority, subtasks } = req.body;
+        const { user_id, title, due_date, description, priority, subtasks, tags, status } = req.body;
 
         const task = new Task({
             user_id,
@@ -47,7 +49,8 @@ export const createTask = async (req, res) => {
             priority: priority || "Low",
             start_date: new Date(), // NEW: automatically set start date
             due_date,
-            status: "todo",
+            status: status || "todo",
+            tags: Array.isArray(tags) ? tags.filter(t => typeof t === 'string') : [],
             subtasks: subtasks || []
         });
 

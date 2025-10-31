@@ -48,7 +48,7 @@ export function calculateCompletionFactor(dueDate, isCompleted) {
 
   const now = DateTime.now();
   const due = DateTime.fromJSDate(new Date(dueDate));
-  
+
   if (due < now) {
     // Task is overdue and incomplete
     return STRESS_FACTORS.COMPLETION_OVERDUE;
@@ -66,7 +66,8 @@ export function calculateTaskStress(task) {
   const deadlineStress = calculateDeadlineProximityFactor(task.dueDate, task.completed);
   const completionStress = calculateCompletionFactor(task.dueDate, task.completed);
 
-  return priorityStress * (1 + deadlineStress + completionStress);
+  // Additive model as per spec: Stress = Priority + Deadline Factor + Completion Factor
+  return priorityStress + deadlineStress + completionStress;
 }
 
 /**
@@ -86,15 +87,18 @@ export function calculateDailyStress(tasks) {
   }));
 
   const totalStress = taskStresses.reduce((sum, t) => sum + t.stress, 0);
-  
-  // Normalize to 1-5 scale for the LLM
-  // Assuming max stress per task is ~4.5 (HIGH(3) * (1 + 0.1 + 0.1))
-  // and a reasonable max of 5 active tasks per day
-  const normalizedStress = Math.min(5, 1 + (totalStress / (4.5 * 5)) * 4);
+
+  // Percentage and normalized (1–5) based on additive model
+  // Max per-task stress = 3 (HIGH) + 0.10 (overdue) + 0.10 (completion overdue) = 3.2
+  const maxPerTask = 3.2;
+  const maxTotal = Math.max(1, (tasks?.length || 0) * maxPerTask);
+  const percentage = Math.max(0, Math.min(100, (totalStress / maxTotal) * 100));
+  const normalizedStress = 1 + (percentage / 100) * 4; // map 0–100% to 1–5
 
   return {
     raw: totalStress,
     normalized: normalizedStress,
+    percentage,
     taskStresses,
     metrics: {
       totalTasks: tasks.length,
@@ -116,13 +120,13 @@ export function calculateDailyStress(tasks) {
  */
 export function aggregateStress(dailyStresses, period) {
   const stressValues = dailyStresses.map(d => d.normalized);
-  
+
   return {
     average: stressValues.reduce((sum, v) => sum + v, 0) / stressValues.length,
     max: Math.max(...stressValues),
     min: Math.min(...stressValues),
-    trend: stressValues.length > 1 
-      ? (stressValues[stressValues.length - 1] - stressValues[0]) / stressValues.length 
+    trend: stressValues.length > 1
+      ? (stressValues[stressValues.length - 1] - stressValues[0]) / stressValues.length
       : 0
   };
 }
