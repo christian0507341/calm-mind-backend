@@ -5,6 +5,8 @@ import cors from "cors";
 import mongoose from "mongoose";
 import bodyParser from "body-parser";
 import { authenticateToken } from "./src/middleware/auth.js";
+
+// -------------------- ROUTE IMPORTS --------------------
 import userRoutes from "./src/modules/auth/routes/user.routes.js";
 import getStartedRoutes from "./src/modules/getStarted/routes/getStarted.routes.js";
 import stressRoutes from "./src/modules/stress/routes/stress.routes.js";
@@ -12,6 +14,7 @@ import coachRoutes from "./src/modules/coach/routes/coach.routes.js";
 import tasksRoutes from "./src/modules/tasks/routes/tasks.routes.js";
 import llmRoutes from "./src/llm/routes/llm.routes.js";
 import profileRoutes from "./src/modules/routes/profile.routes.js";
+import notificationRoutes from "./src/modules/notifications/routes/notification.routes.js"; // ✅ NEW
 
 dotenv.config();
 
@@ -23,14 +26,19 @@ app.use(express.json());
 app.use(bodyParser.json());
 
 // -------------------- ROUTES --------------------
+
+// Public / Auth routes
 app.use("/api/users", userRoutes); // user auth routes
 app.use("/api/get-started", getStartedRoutes); // onboarding
-app.use("/api/stress", authenticateToken, stressRoutes); // protected
-app.use("/api/coach", authenticateToken, coachRoutes); // protected
-app.use("/api/tasks", authenticateToken, tasksRoutes); // protected
+
+// Protected routes (require token)
+app.use("/api/stress", authenticateToken, stressRoutes);
+app.use("/api/coach", authenticateToken, coachRoutes);
+app.use("/api/tasks", authenticateToken, tasksRoutes);
 app.use("/api/llm", authenticateToken, llmRoutes);
+app.use("/api/notifications", authenticateToken, notificationRoutes); // ✅ NEW notifications route
 
-
+// Profile route (check if this should be protected)
 app.use("/api/getStarted", profileRoutes);
 
 // -------------------- STATIC FILES --------------------
@@ -54,11 +62,19 @@ mongoose
     console.log("✅ MongoDB connected to:", MONGO_URI);
     // Log the available collections
     mongoose.connection.db.listCollections().toArray((err, collections) => {
-      console.log("📚 Available collections:", collections.map(c => c.name).join(', '));
+      if (err) {
+        console.error("Error listing collections:", err);
+      } else {
+        console.log(
+          "📚 Available collections:",
+          collections.map((c) => c.name).join(", ")
+        );
+      }
     });
     app.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
       console.log("All user routes available under /api/users");
+      console.log("Notifications routes available under /api/notifications ✅");
     });
   })
   .catch((err) => {
