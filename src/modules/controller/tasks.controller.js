@@ -68,18 +68,24 @@ export const createTask = async (req, res) => {
 export const updateTaskStatus = async (req, res) => {
     try {
         const { id } = req.params;
-        const { status } = req.body;
+        const { title, description, priority, status, start_date, due_date, tags } = req.body || {};
 
         const task = await Task.findById(id);
         if (!task) return res.status(404).json({ message: "Task not found" });
 
-        if (status) task.status = status;
-        await task.save();
+        if (typeof title === 'string') task.title = title;
+        if (typeof description === 'string') task.description = description;
+        if (typeof priority === 'string') task.priority = priority;
+        if (typeof status === 'string') task.status = status;
+        if (start_date) task.start_date = new Date(start_date);
+        if (due_date) task.due_date = new Date(due_date);
+        if (Array.isArray(tags)) task.tags = tags.filter(t => typeof t === 'string');
 
+        await task.save();
         res.json({ task });
     } catch (err) {
         console.error(err);
-        res.status(500).json({ message: "Failed to update task status." });
+        res.status(500).json({ message: "Failed to update task." });
     }
 };
 

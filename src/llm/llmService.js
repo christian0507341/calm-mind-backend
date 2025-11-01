@@ -23,6 +23,8 @@ export async function getCoachResponse(stressContext, userInput = '') {
   const isUnclear = rawText.length < 3 || !/[A-Za-zÀ-ÖØ-öø-ÿ]/.test(rawText) || (/^\W+$/.test(rawText));
   const isWhy = /^(why|bakit)\b/i.test(rawText);
   const isTasky = /(task|todo|deadline|overdue|project|plan|schedule|finish|complete)/i.test(rawText);
+  const isStressQuery = /(how\s*stressed\s*am\s*i\??|gaano.*stress|stress\s*ko\s*ngayon\??)/i.test(rawText);
+  const isTotalsQuery = /(how\s*many.*total.*task.*stress|total\s*task.*stress|ilan.*task.*stress)/i.test(rawText);
 
   const due48 = stressContext?.workload?.due_48h_count ?? 0;
   const overdue = stressContext?.workload?.overdue_count ?? 0;
@@ -68,13 +70,48 @@ Output policy:
     "escalation_required": boolean,
     "resources": string[]          // optional links or labels
   }
+
 - Keep response plain text (no markdown tables).
 
 Unclear input rule:
 - If the user's message is unclear (gibberish/too short/ambiguous), reply with a single-line clarification only.
 - Do not include steps or buttons until the topic is clear.
 
-User: "${userInput}"`;
+User: "${userInput}"
+`;
+
+  // Deterministic answer for "How stressed am I?" — concise, rounded, counts only
+  if (isStressQuery) {
+    const percentage = Math.round(Number(stressContext?.stress?.percentage ?? today * 20));
+    const bandStr = Number(today).toFixed(1);
+    return {
+      response: `Today’s stress: ${percentage}% (${bandStr}/5).\n- Due in 48h: ${due48}\n- Overdue: ${overdue}`,
+      stress_band: band,
+      tone: TONE_MAP[band].tone,
+      steps: [],
+      buttons: [],
+      focus_area: 'stress_overview',
+      escalation_required: band >= 5,
+      resources: []
+    };
+  }
+
+  // Deterministic answer for total tasks + stress today — human concise
+  if (isTotalsQuery) {
+    const totalTasks = Number(stressContext?.workload?.total_tasks ?? 0);
+    const percentage = Math.round(Number(stressContext?.stress?.percentage ?? today * 20));
+    const bandStr = Number(today).toFixed(1);
+    return {
+      response: `You have ${totalTasks} tasks. Today’s stress: ${percentage}% (${bandStr}/5).\n- Due in 48h: ${due48}\n- Overdue: ${overdue}`,
+      stress_band: band,
+      tone: TONE_MAP[band].tone,
+      steps: [],
+      buttons: [],
+      focus_area: 'stress_overview',
+      escalation_required: band >= 5,
+      resources: []
+    };
+  }
 
   // Early exit for unclear inputs: return single-line clarification without calling LLM
   if (isUnclear) {
